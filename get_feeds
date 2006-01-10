@@ -1,0 +1,196 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use LWP::Simple;
+use YAML qw(DumpFile);
+
+my @sources = (
+               {
+                 code  => 'gu',
+                 start => 'http://www.guardian.co.uk/webfeeds',
+                 desc  => 'Guardian Unlimited',
+                 get   => \&get_gu,
+               },
+               {
+                 code  => 'times',
+                 start => 'http://www.timesonline.co.uk/section/0,,21669,00.html',
+                 desc  => 'Times Online',
+                 get   => \&get_times,
+               },
+               {
+                 code  => 'indy',
+                 start => 'http://news.independent.co.uk/article293771.ece',
+                 desc  => 'The Independent',
+                 get   => \&get_indy,
+               },
+               {
+                 code  => 'ft',
+                 start => 'http://news.ft.com/siteservices/rss',
+                 desc  => 'Financial Times',
+                 get   => \&get_ft,
+               },
+               {
+                 code  => 'telegraph',
+                 start => 'http://www.telegraph.co.uk/portal/main.jhtml?xml=/portal/rss/exclusions/rssinfo.xml',
+                 desc  => 'Telegraph',
+                 get   => \&get_telegraph,
+               },
+               {
+                 code  => 'mail',
+                 start => 'http://www.dailymail.co.uk/pages/dmstandard/article.html?in_article_id=334032',
+                 desc  => 'Daily Mail',
+                 get   => \&get_mail,
+               },
+               {
+                 code  => 'mirror',
+                 start => 'http://www.mirror.co.uk',
+                 desc  => 'Mirror.co.uk',
+                 get   => \&get_mirror,
+               },
+               {
+                 code  => 'scotsman',
+                 start => 'http://webfeeds.scotsman.com/',
+                 desc  => 'The Scotsman',
+                 get   => \&get_scotsman,
+               },
+               {
+                 code  => 'bbc',
+                 start => 'http://news.bbc.co.uk/1/hi/help/rss/default.stm',
+                 desc  => 'BBC',
+                 get   => \&get_bbc,
+               },
+             );
+
+foreach (@sources) {
+  $_->{get}->($_);
+}
+
+DumpFile('feeds.yaml', \@sources);
+
+sub get_gu {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!"(http://.+?\.(?:rdf|xml))".+?yahoo.+?\.gif.+?<TD>(.+?)</TD>!g;
+
+  while (@found) {
+    my ($url, $desc) = splice @found, 0, 2;
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+sub get_times {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!type="application/(?:rss|atom)\+xml" title="(.+?)" href="(.+?)"!g;
+
+  while (@found) {
+    my ($desc, $url) = splice @found, 0, 2;
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+sub get_indy {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!<option value="(.+?)"( class="toprow")?>(.+?)\s*</option>!g;
+
+  my $class_name = '';
+  while (@found) {
+    my ($url, $class, $desc) = splice @found, 0, 3;
+    if ($class) {
+      $class_name = $desc;
+      next;
+    }
+    $desc =~ s/^-- //;
+    push @{$_->{feeds}}, { url => $url, desc => "$class_name - $desc"};
+  }
+}
+
+sub get_ft {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!<a class="allWide" href="(http.+?rss.+?)">(.+?)<!g;
+
+  while (@found) {
+    my ($url, $desc) = splice @found, 0, 2;
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+sub get_telegraph {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!do_rss\('(.+?)'\).+?&nbsp;(.+?)</a>!g;
+
+  while (@found) {
+    my ($url, $desc) = splice @found, 0, 2;
+    $url = "http://www.telegraph.co.uk/ETHtml/content/portal/rss/rsscheck.jhtml?rssfeed=$url";
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+sub get_mail {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!"(/pages/xml.*?id=\d+)".+?rssIcon\.gif.+? alt="(.+?) RSS feed"!g;
+
+  while (@found) {
+    my ($url, $desc) = splice @found, 0, 2;
+    $url = "http://www.dailymail.co.uk$url";
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+sub get_mirror {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!title="Mirror.co.uk - (.+?) \[RSS]" href="(.+?)"!g;
+
+  while (@found) {
+    my ($desc, $url) = splice @found, 0, 2;
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+sub get_scotsman {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!href="(http://news.+?format=rss)">(.+?)</a>!g;
+
+  while (@found) {
+    my ($url, $desc) = splice @found, 0, 2;
+    next if $url =~ /\?tid=\d+/;
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+sub get_bbc {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!class="mvb".+?"(http://.+?rss/newsonline.+?)".+?<b>(.+?)</b>!g;
+
+  while (@found) {
+    my ($url, $desc) = splice @found, 0, 2;
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
