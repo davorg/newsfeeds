@@ -100,6 +100,9 @@ function filter_it (text) {
 
     <div id="credits">
       Page created by <a href="http://dave.org.uk/">Dave Cross</a>
+      using <a href="http://cvs.dave.org.uk/index.cgi/newsfeeds/">newsfeeds</a>.
+      <br /><a href="feeds.yaml">Raw data</a>
+      (in <a href="http://www.yaml.org/">YAML</a> format).
     </div>
 
     <div id="ads">
