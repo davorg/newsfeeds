@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+[% USE date -%]
+<opml version="1.1">
+  <head>
+    <title>UK National Newspaper RSS Feeds</title>
+    <dateCreated>[% date.format(date.now, '%a, %b %d %Y %H:%M:%S %Z') %]</dateCreated>
+    <dateModified>[% date.format(date.now, '%a, %b %d %Y %H:%M:%S %Z') %]<</dateModified>
+    <ownerName>Dave Cross</ownerName>
+    <ownerEmail>dave@dave.org.uk</ownerEmail>
+  </head>
+  <body>
+[% FOREACH source IN sources;
+     FOREACH feed IN source.feeds -%]
+    <outline text="[% source.desc %] - [% feed.desc %]" xmlUrl="[% feed.url %]"/>
+[%   END;
+   END -%]
+  </body>
+</opml>

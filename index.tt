@@ -1,6 +1,7 @@
 [% DEFAULT file = 'feeds.yaml';
    USE YAML;
-   sources = YAML.undumpfile(file) -%]
+   sources = YAML.undumpfile(file);
+   PROCESS opml.tt | redirect('newsfeeds.opml') -%]
 
 <html>
   <head>
@@ -75,7 +76,8 @@ function filter_it (text) {
       love to know about it. Please <a href="mailto:dave@dave.org.uk">let
       me know</a>.</p>
 
-    <p><b>Update:</b> Added <i>The Scotsman</i> and <i>Mirror.co.uk</i>.</p>
+    <p><b>Update:</b> Added OPML files. There's one that contains everything
+      and one for each individual source.</p>
 
     <p>Choose a source: <select onchange="show_hide(this)">
         <option value="all">All Sources</option>
@@ -86,10 +88,15 @@ function filter_it (text) {
       and/or filter the list:
       <input type="text" onkeypress="filter(event)" onchange="filter_it(this.value)" id="filter" /></p>
 
-[% FOREACH source IN sources -%]
+    <p><a href="newsfeeds.opml">OPML</a></p>
+
+[% FOREACH source IN sources;
+   opml = source.code _ '.opml';
+   PROCESS one_opml.tt | redirect(opml) -%]
     <div class="source" id="[% source.code %]">
       <h2>[% source.desc %]</h2>
-      <p><a href="[% source.start %]">More information</a></p>
+      <p><a href="[% source.start %]">More information</a> /
+        <a href="[% source.code %].opml">OPML</a></p>
       <ul>
 [% FOREACH feed IN source.feeds -%]
         <li><a href="[% feed.url %]">[% feed.desc %]</a></li>
