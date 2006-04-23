@@ -4,14 +4,14 @@
   <head>
     <title>UK National Newspaper RSS Feeds</title>
     <dateCreated>[% date.format(date.now, '%a, %b %d %Y %H:%M:%S %Z') %]</dateCreated>
-    <dateModified>[% date.format(date.now, '%a, %b %d %Y %H:%M:%S %Z') %]<</dateModified>
+    <dateModified>[% date.format(date.now, '%a, %b %d %Y %H:%M:%S %Z') %]</dateModified>
     <ownerName>Dave Cross</ownerName>
     <ownerEmail>dave@dave.org.uk</ownerEmail>
   </head>
   <body>
 [% FOREACH source IN sources;
      FOREACH feed IN source.feeds -%]
-    <outline text="[% source.desc %] - [% feed.desc %]" xmlUrl="[% feed.url %]"/>
+    <outline text="[% source.desc | html %] - [% feed.desc | html %]" type="rss" xmlUrl="[% feed.url %]"/>
 [%   END;
    END -%]
   </body>
