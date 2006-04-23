@@ -49,6 +49,12 @@ my @sources = (
                  desc  => 'Mirror.co.uk',
                  get   => \&get_mirror,
                },
+	       {
+		 code  => 'sun',
+		 start => 'http://www.thesun.co.uk/article/0,,2006090056,00.html',
+		 desc  => 'The Sun',
+		 get   => \&get_sun,
+	       },
                {
                  code  => 'scotsman',
                  start => 'http://webfeeds.scotsman.com/',
@@ -63,7 +69,18 @@ my @sources = (
                },
              );
 
+my %sources = map { $_->{code} => 1 } @sources;
+
+my %process;
+
+if (@ARGV) {
+  %process = map { $_ => 1 } grep { $sources{$_} } @ARGV;
+} else {
+  %process = %sources;
+}
+
 foreach (@sources) {
+  next unless $process{$_->{code}};
   $_->{get}->($_);
 }
 
@@ -164,6 +181,21 @@ sub get_mirror {
 
   while (@found) {
     my ($desc, $url) = splice @found, 0, 2;
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+sub get_sun {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  $page =~ s/&nbsp;/ /g;
+  my @found = $page =~ m|<STRONG>(?:<BR>)?(.+?) ?-</STRONG> <A href="(http://www.thesun.co.uk/rssFeed/rssIndexDisplay.*?)"|g;
+
+  while (@found) {
+    my ($desc, $url) = splice @found, 0, 2;
+    $desc = join ' ', map { ucfirst } split /\s+/, lc $desc;
     push @{$_->{feeds}}, { url => $url, desc => $desc};
   }
 }
