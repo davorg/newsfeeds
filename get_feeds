@@ -136,7 +136,7 @@ sub get_ft {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!<a class="allWide" href="(http.+?rss.+?)">(.+?)<!g;
+  my @found = $page =~ m!<a class="allWide" href="(http://news.ft.com/rss/\w+/\w+)">([\w ]+?)<!g;
 
   while (@found) {
     my ($url, $desc) = splice @found, 0, 2;
