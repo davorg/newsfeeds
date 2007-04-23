@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+use Template;
+
+my $tt = Template->new({ OUTPUT_PATH => '.' });
+
+$tt->process('index.tt', {}, 'index.html')
+  or die $tt->error;

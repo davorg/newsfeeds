@@ -3,7 +3,8 @@
    USE YAML;
    sources = YAML.undumpfile(file);
    PROCESS opml.tt | redirect('newsfeeds.opml') -%]
-
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
   <head>
     <title>UK National Newspaper RSS Feeds</title>
@@ -108,7 +109,7 @@ function filter_it (text) {
 
     <div id="credits">
       Page created by <a href="http://dave.org.uk/">Dave Cross</a>
-      using <a href="http://cvs.dave.org.uk/index.cgi/newsfeeds/">newsfeeds</a>
+      using <a href="http://svn.mag-sol.com/newsfeeds/">newsfeeds</a>
       at [% date.format(date.now, '%Y-%m-%d %H:%M') %]
       <br /><a href="feeds.yaml">Raw data</a>
       (in <a href="http://www.yaml.org/">YAML</a> format).

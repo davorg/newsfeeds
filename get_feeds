@@ -15,7 +15,7 @@ my @sources = (
                },
                {
                  code  => 'times',
-                 start => 'http://www.timesonline.co.uk/section/0,,21669,00.html',
+                 start => 'http://www.timesonline.co.uk/tol/audio_video/rss/',
                  desc  => 'Times Online',
                  get   => \&get_times,
                },
@@ -27,7 +27,7 @@ my @sources = (
                },
                {
                  code  => 'ft',
-                 start => 'http://news.ft.com/siteservices/rss',
+                 start => 'http://www.ft.com/servicestools/newstracking/rss',
                  desc  => 'Financial Times',
                  get   => \&get_ft,
                },
@@ -44,8 +44,14 @@ my @sources = (
                  get   => \&get_mail,
                },
                {
+                 code  => 'express',
+                 start => 'http://www.dailyexpress.co.uk/feeds/',
+                 desc  => 'Daily Express',
+                 get   => \&get_express,
+               },
+               {
                  code  => 'mirror',
-                 start => 'http://www.mirror.co.uk',
+                 start => 'http://www.mirror.co.uk/more/',
                  desc  => 'Mirror.co.uk',
                  get   => \&get_mirror,
                },
@@ -91,10 +97,11 @@ sub get_gu {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!"(http://.+?\.(?:rdf|xml))".+?yahoo.+?\.gif.+?<TD>(.+?)</TD>!g;
+  my @found = $page =~ m!<strong>(.*?)</strong></td></tr><TD><A HREF="(http://www.guardian.co.uk/rssfeed/.*?.xml)!g;
 
   while (@found) {
-    my ($url, $desc) = splice @found, 0, 2;
+    my ($desc, $url) = splice @found, 0, 2;
+    $desc =~ s/^Guardian Unlimited //;
     push @{$_->{feeds}}, { url => $url, desc => $desc};
   }
 }
@@ -104,10 +111,10 @@ sub get_times {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!type="application/(?:rss|atom)\+xml" title="(.+?)" href="(.+?)"!g;
+  my @found = $page =~ m!(http://www.timesonline.co.uk/tol/feeds/rss/.*?\.xml).*?>(.*?) RSS!g;
 
   while (@found) {
-    my ($desc, $url) = splice @found, 0, 2;
+    my ($url, $desc) = splice @found, 0, 2;
     push @{$_->{feeds}}, { url => $url, desc => $desc};
   }
 }
@@ -136,7 +143,7 @@ sub get_ft {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!<a class="allWide" href="(http://news.ft.com/rss/\w+/\w+)">([\w ]+?)<!g;
+  my @found = $page =~ m!"(http://www.ft.com/rss/.*?)"><img .*?/>\s*(\S.*?)</a>!g;
 
   while (@found) {
     my ($url, $desc) = splice @found, 0, 2;
@@ -149,11 +156,10 @@ sub get_telegraph {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!do_rss\('(.+?)'\).+?&nbsp;(.+?)</a>!g;
+  my @found = $page =~ m!"(http://www.telegraph.co.uk/newsfeed/rss/.*?)">(.*?)</a>!g;
 
   while (@found) {
     my ($url, $desc) = splice @found, 0, 2;
-    $url = "http://www.telegraph.co.uk/ETHtml/content/portal/rss/rsscheck.jhtml?rssfeed=$url";
     push @{$_->{feeds}}, { url => $url, desc => $desc};
   }
 }
@@ -172,15 +178,35 @@ sub get_mail {
   }
 }
 
+sub get_express {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!href="(/rss/.*?\.xml)" .*?>(.*?)<!g;
+
+  while (@found) {
+    my ($url, $desc) = splice @found, 0, 2;
+    push @{$_->{feeds}}, { url => "http://dailyexpress.co.uk$url",
+                           desc => $desc };
+  }
+}
+
 sub get_mirror {
   my $source = shift;
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!title="Mirror.co.uk - (.+?) \[RSS]" href="(.+?)"!g;
+  my @found = $page =~ m!"(http://www.mirror.co.uk/.*?/rss.xml)">.*?alt="(.*?) \[RSS!g;
 
+  my $section = '';
   while (@found) {
-    my ($desc, $url) = splice @found, 0, 2;
+    my ($url, $desc) = splice @found, 0, 2;
+    if ($url =~ tr|/|| == 4) {
+      $section = $desc;
+    } else {
+      $desc = "$section - $desc";
+    }
     push @{$_->{feeds}}, { url => $url, desc => $desc};
   }
 }
@@ -191,10 +217,10 @@ sub get_sun {
   my $page = get $source->{start};
 
   $page =~ s/&nbsp;/ /g;
-  my @found = $page =~ m|<STRONG>(?:<BR>)?(.+?) ?-</STRONG> <A href="(http://www.thesun.co.uk/rssFeed/rssIndexDisplay.*?)"|g;
+  my @found = $page =~ m!<A class=grey2red12 href="(http://www.thesun.co.uk/rssFeed/rssIndexDisplay/.*?\.xml)">(?:<STRONG>)?(.*?)(?:</STRONG>)?</A>!gi;
 
   while (@found) {
-    my ($desc, $url) = splice @found, 0, 2;
+    my ($url, $desc) = splice @found, 0, 2;
     $desc = join ' ', map { ucfirst } split /\s+/, lc $desc;
     push @{$_->{feeds}}, { url => $url, desc => $desc};
   }
@@ -219,7 +245,7 @@ sub get_bbc {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!class="mvb".+?"(http://.+?rss/newsonline.+?)".+?<b>(.+?)</b>!g;
+  my @found = $page =~ m!"(http://.+?rss/newsonline.+?/rss.xml)">(.+?)</a>!g;
 
   while (@found) {
     my ($url, $desc) = splice @found, 0, 2;
