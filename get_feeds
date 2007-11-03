@@ -57,9 +57,15 @@ my @sources = (
                },
 	       {
 		 code  => 'sun',
-		 start => 'http://www.thesun.co.uk/article/0,,2006090056,00.html',
+		 start => 'http://thesun.co.uk/sol/homepage/hygiene/rss_sign_up/article247949.ece',
 		 desc  => 'The Sun',
 		 get   => \&get_sun,
+	       },
+	       {
+		 code  => 'star',
+		 start => 'http://www.dailystar.co.uk/feeds',
+		 desc  => 'Daily Star',
+		 get   => \&get_star,
 	       },
                {
                  code  => 'scotsman',
@@ -97,7 +103,7 @@ sub get_gu {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!<strong>(.*?)</strong></td></tr><TD><A HREF="(http://www.guardian.co.uk/rssfeed/.*?.xml)!g;
+  my @found = $page =~ m!<strong>(.*?)</strong></td></tr><TD><A HREF="(http://www.guardian.co.uk/rss.*?)">!g;
 
   while (@found) {
     my ($desc, $url) = splice @found, 0, 2;
@@ -111,10 +117,14 @@ sub get_times {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!(http://www.timesonline.co.uk/tol/feeds/rss/.*?\.xml).*?>(.*?) RSS!g;
+  my @found = $page =~ m!(http://.*?) class="link-666">(.*?)</a>!g;
 
   while (@found) {
     my ($url, $desc) = splice @found, 0, 2;
+    next unless $url =~/rss/;
+
+    $desc = "Blog: $desc" if $url =~ /typepad/;
+    $desc = "Podcast: $desc" if $url =~ /podcast/;
     push @{$_->{feeds}}, { url => $url, desc => $desc};
   }
 }
@@ -124,18 +134,24 @@ sub get_indy {
 
   my $page = get $source->{start};
 
-  my @found = $page =~ m!<option value="(.+?)"( class="toprow")?>(.+?)\s*</option>!g;
+  my ($list) = $page =~ m|<div id="rssmenu">(.*?)</div>|s;
+  $list =~ s/<img.*?>//g;
 
-  my $class_name = '';
-  while (@found) {
-    my ($url, $class, $desc) = splice @found, 0, 3;
-    if ($class) {
-      $class_name = $desc;
-      next;
-    }
-    $desc =~ s/^-- //;
-    push @{$_->{feeds}}, { url => $url, desc => "$class_name - $desc"};
-  }
+#  warn $list;
+
+#  my @found = $page =~ m!<option value="(.+?)"( class="toprow")?>(.+?)\s*</option>!g;
+#
+#  my $class_name = '';
+#  while (@found) {
+#    my ($url, $class, $desc) = splice @found, 0, 3;
+#
+#    if ($class) {
+#      $class_name = $desc;
+#      next;
+#    }
+#    $desc =~ s/^-- //;
+#    push @{$_->{feeds}}, { url => $url, desc => "$class_name - $desc"};
+#  }
 }
 
 sub get_ft {
@@ -216,12 +232,31 @@ sub get_sun {
 
   my $page = get $source->{start};
 
-  $page =~ s/&nbsp;/ /g;
-  my @found = $page =~ m!<A class=grey2red12 href="(http://www.thesun.co.uk/rssFeed/rssIndexDisplay/.*?\.xml)">(?:<STRONG>)?(.*?)(?:</STRONG>)?</A>!gi;
+  my @found = $page =~ m!<a href="(.*?rss.*?").*?>(.*?)</a>!gi;
 
   while (@found) {
     my ($url, $desc) = splice @found, 0, 2;
-    $desc = join ' ', map { ucfirst } split /\s+/, lc $desc;
+    if ($url =~ m|^/sol/|) {
+      $url = "http://thesun.co.uk$url";
+    }
+    next unless $url =~ /^http/;
+    push @{$_->{feeds}}, { url => $url, desc => $desc};
+  }
+}
+
+
+sub get_star {
+  my $source = shift;
+
+  my $page = get $source->{start};
+
+  my @found = $page =~ m!<a href="(/rss/.*?)"><img.*?>(.*?)</a>!gi;
+
+  while (@found) {
+    my ($url, $desc) = splice @found, 0, 2;
+    if ($url =~ m|^/rss/|) {
+      $url = "http://www.dailystar.co.uk$url";
+    }
     push @{$_->{feeds}}, { url => $url, desc => $desc};
   }
 }
